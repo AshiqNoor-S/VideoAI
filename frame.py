@@ -9,7 +9,6 @@ from langchain.document_transformers import DoctranTextTranslator
 from txtai.pipeline import Summary, Textractor
 from PyPDF2 import PdfReader
 from langchain.chains.summarize import load_summarize_chain
-from dotenv import load_dotenv
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings, HuggingFaceInstructEmbeddings
 from langchain.vectorstores import FAISS
@@ -19,21 +18,7 @@ from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 import re
 
-# Set the OpenAI API key
-os.environ['OPENAI_API_KEY'] = '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'
 
-# Configure Streamlit
-# st.set_page_config(
-#     page_title="My Streamlit App",
-#     page_icon="✅",
-#     layout="wide",
-#     initial_sidebar_state="expanded",
-#     background_color="#f0f0f0"  # Set the desired background color using a hex color code
-# )
-
-openai.api_key = ""
-os.environ["OPENAI_API_KEY"] = "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"
-os.environ["OPENAI_API_MODEL"] = "davinci-002"
 
 st.title("VideoAI App")
 st.write("Welcome to the VideoAI app! Upload a YouTube URL to get started.")
@@ -43,6 +28,10 @@ st.title("Instructions")
 st.write("1. Enter a YouTube URL.")
 st.write("2. Choose the desired actions.")
 st.write("3. Click 'Process' to start.")
+
+
+os.environ["OPENAI_API_KEY"] = st.secrets["key"]
+os.environ["OPENAI_API_MODEL"] = "davinci-002"
 
 def download(video_id: str) -> str:
     video_url = f'{video_id}'
@@ -54,7 +43,7 @@ def download(video_id: str) -> str:
             'preferredcodec': 'm4a',
         }]
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    with yt_dlp.YoutubeDL(ydl_opts,{'ffmpeg_location': "/usr/bin/ffmpeg"}) as ydl:
         error_code = ydl.download([video_url])
         if error_code != 0:
             raise Exception('Failed to download video')
@@ -138,7 +127,7 @@ if st.sidebar.button("Get Transcription"):
         whisper_model = whisper.load_model("base.en")
         input_text = transcribe(file_path)
         st.session_state.input_text = input_text
-        st.markdown("**Your Input Text**")
+        st.markdown("*Your Input Text*")
         
         def boxed_text(text):
             return f'<div style="padding: 4%; border: 2px solid blue; border-radius: 15px; margin:2%;">{text}</div>'
@@ -173,10 +162,10 @@ elif choice == "Summarize Text":
         if "input_text" in st.session_state:
             col1, col2 = st.columns([1, 1])
             with col1:
-                st.markdown("**Your Input Text**")
+                st.markdown("*Your Input Text*")
                 st.info(st.session_state.input_text)
             with col2:
-                st.markdown("**Summary Result**")
+                st.markdown("*Summary Result*")
                 result = text_summary(st.session_state.input_text)
                 st.success(result)
         else:
@@ -194,5 +183,3 @@ elif choice == "Chat":
         user_question = st.text_input("Chat:")
         if user_question:
             handle_userinput(user_question)
-
-
